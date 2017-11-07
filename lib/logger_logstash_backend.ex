@@ -15,7 +15,9 @@
 ################################################################################
 defmodule LoggerLogstashBackend do
   @behaviour :gen_event
+
   use Timex
+  require Logger
 
   def init({__MODULE__, name}) do
     {:ok, configure(name, [])}
@@ -80,19 +82,22 @@ defmodule LoggerLogstashBackend do
   end
 
   defp configure(name, opts) do
-    env = Application.get_env :logger, name, []
-    opts = Keyword.merge env, opts
-    Application.put_env :logger, name, opts
+    env  = Application.get_env(:logger, name, [])
+    opts = Keyword.merge(env, opts)
 
-    level = Keyword.get opts, :level, :debug
-    metadata = Keyword.get opts, :metadata, []
-    type = Keyword.get opts, :type, "elixir"
-    host = Keyword.get opts, :host
-    port = Keyword.get opts, :port
+    level    = Keyword.get(opts, :level, :debug)
+    metadata = Keyword.get(opts, :metadata, [])
+    type     = Keyword.get(opts, :type, "elixir")
+    host     = Keyword.get(opts, :host) |> get_system_value |> get_host
+    port     = Keyword.get(opts, :port) |> get_system_value |> get_port
+
+    Application.put_env(:logger, name, opts)
+
+
     {:ok, socket} = :gen_udp.open 0
     %{
       name: name,
-      host: to_charlist(host),
+      host: host,
       port: port,
       level: level,
       socket: socket,
@@ -100,6 +105,30 @@ defmodule LoggerLogstashBackend do
       metadata: metadata
     }
   end
+
+  defp get_host(nil), do: to_charlist("localhost")
+  defp get_host(host), do: to_charlist(host)
+
+  defp get_port(nil), do: 0
+  defp get_port(port) do
+    case Integer.parse(port) do
+      {number, _} -> number
+      :error ->
+        IO.warn("Invalid Logstash backend port #{inspect port}")
+        0
+    end
+  end
+
+  defp get_system_value({:system, env_var_name}) do
+    if value = System.get_env(env_var_name) do
+      value
+    else
+      IO.warn("Logstash backend environment variable not defined: #{inspect env_var_name}")
+      nil
+    end
+  end
+
+  defp get_system_value(other), do: other
 
   # inspects the argument only if it is a pid
   defp inspect_pid(pid) when is_pid(pid), do: inspect(pid)
