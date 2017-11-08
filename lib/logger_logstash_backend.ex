@@ -16,9 +16,6 @@
 defmodule LoggerLogstashBackend do
   @behaviour :gen_event
 
-  use Timex
-  require Logger
-
   def init({__MODULE__, name}) do
     {:ok, configure(name, [])}
   end
@@ -65,21 +62,25 @@ defmodule LoggerLogstashBackend do
              |> Keyword.merge(metadata)
              |> Enum.into(%{})
              |> Map.put(:level, to_string(level))
-             |> inspect_pids
 
     {{year, month, day}, {hour, minute, second, milliseconds}} = ts
+
     {:ok, ts} = NaiveDateTime.new(
       year, month, day, hour, minute, second, (milliseconds * 1000)
     )
-    ts = Timex.to_datetime ts, Timezone.local
+
     {:ok, json} = Poison.encode %{
       type: type,
-      "@timestamp": Timex.format!(ts, "{ISO:Extended}"),
+      "@timestamp": NaiveDateTime.to_iso8601(ts, :extended),
       message: to_string(msg),
-      fields: Map.new(fields, fn {k, v} -> {k, inspect(v)} end),
+      fields: Map.new(fields, fn {k, v} -> {k, pretty_inspect(v)} end),
     }
     :gen_udp.send socket, host, port, to_charlist(json)
   end
+
+  defp pretty_inspect(value) when is_number(value), do: value
+  defp pretty_inspect(value) when is_binary(value), do: value
+  defp pretty_inspect(value), do: inspect(value)
 
   defp configure(name, opts) do
     env  = Application.get_env(:logger, name, [])
@@ -110,6 +111,7 @@ defmodule LoggerLogstashBackend do
   defp get_host(host), do: to_charlist(host)
 
   defp get_port(nil), do: 0
+  defp get_port(port) when is_integer(port), do: port
   defp get_port(port) do
     case Integer.parse(port) do
       {number, _} -> number
@@ -120,24 +122,13 @@ defmodule LoggerLogstashBackend do
   end
 
   defp get_system_value({:system, env_var_name}) do
-    if value = System.get_env(env_var_name) do
-      value
-    else
+    value = System.get_env(env_var_name)
+    unless value do
       IO.warn("Logstash backend environment variable not defined: #{inspect env_var_name}")
-      nil
     end
+    value
   end
 
   defp get_system_value(other), do: other
 
-  # inspects the argument only if it is a pid
-  defp inspect_pid(pid) when is_pid(pid), do: inspect(pid)
-  defp inspect_pid(other), do: other
-
-  # inspects the field values only if they are pids
-  defp inspect_pids(fields) when is_map(fields) do
-    Enum.into fields, %{}, fn {key, value} ->
-      {key, inspect_pid(value)}
-    end
-  end
 end

@@ -16,7 +16,6 @@
 defmodule LoggerLogstashBackendTest do
   use ExUnit.Case, async: false
   require Logger
-  use Timex
 
   @backend {LoggerLogstashBackend, :test}
   Logger.add_backend @backend
@@ -41,47 +40,47 @@ defmodule LoggerLogstashBackendTest do
   test "can log" do
     Logger.info "hello world", [key1: "field1"]
     json = get_log()
-    {:ok, data} = JSX.decode json
+    {:ok, data} = Poison.decode json
     assert data["type"] === "some_app"
     assert data["message"] === "hello world"
     expected = %{
       "function" => "test can log/1",
       "level" => "info",
-      "module" => "Elixir.LoggerLogstashBackendTest",
+      "module" => "LoggerLogstashBackendTest",
       "pid" => (inspect self()),
       "some_metadata" => "go here",
-      "line" => 42,
-      "key1" => "field1"
+      "line" => 41,
+      "key1" => "field1",
     }
-    assert contains?(data["fields"], expected)
-    {:ok, ts} = Timex.parse data["@timestamp"], "{ISO:Extended}"
-    ts = Timex.to_unix ts
 
-    now = Timex.to_unix Timex.local
-    assert (now - ts) < 1000
+    assert contains?(data["fields"], expected)
+
+    {:ok, ts} = NaiveDateTime.from_iso8601(data["@timestamp"])
+    now = NaiveDateTime.utc_now
+    assert NaiveDateTime.diff(now, ts) < 1000
   end
 
   test "can log pids" do
     Logger.info "pid", [pid_key: self()]
     json = get_log()
-    {:ok, data} = JSX.decode json
+    {:ok, data} = Poison.decode json
     assert data["type"] === "some_app"
     assert data["message"] === "pid"
     expected = %{
       "function" => "test can log pids/1",
       "level" => "info",
-      "module" => "Elixir.LoggerLogstashBackendTest",
-      "pid" => (inspect self()),
+      "module" => "LoggerLogstashBackendTest",
+      "pid" => inspect(self()),
       "pid_key" => inspect(self()),
       "some_metadata" => "go here",
-      "line" => 65
+      "line" => 64,
     }
-    assert contains?(data["fields"], expected)
-    {:ok, ts} = Timex.parse data["@timestamp"], "{ISO:Extended}"
-    ts = Timex.to_unix ts
 
-    now = Timex.to_unix Timex.local
-    assert (now - ts) < 1000
+    assert contains?(data["fields"], expected)
+
+    {:ok, ts} = NaiveDateTime.from_iso8601(data["@timestamp"])
+    now = NaiveDateTime.utc_now
+    assert NaiveDateTime.diff(now, ts) < 1000
   end
 
   test "cant log when minor levels" do
