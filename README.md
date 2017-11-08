@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/marcelog/logger_logstash_backend.svg)](https://travis-ci.org/marcelog/logger_logstash_backend)
+[![Build Status](https://travis-ci.org/EasyMile/logger_logstash_backend.svg)](https://travis-ci.org/EasyMile/logger_logstash_backend)
 
 LoggerLogstashBackend
 =====================
@@ -16,6 +16,8 @@ that will send logs to the [Logstash UDP input](https://www.elastic.co/guide/en/
  be merged with the metadata sent in every log message.
  * **level**: Atom. Minimum level for this backend.
  * **type**: String.t. Type of logs. Useful to filter in logstash.
+
+The host and port can be defined as environment variables as well using the ```{:system, "ENV_VAR_NAME"}``` convention
 
 ## Sample Logstash config
 ```
@@ -47,11 +49,11 @@ end
 ```
 Then run mix deps.get to install it.
 
-Add logger and tzdata as applications:
+Add logger as applications:
 
 ```elixir
 def application do
-  [applications: [:logger, :timex]]
+  [applications: [:logger]]
 end
 ```
 
@@ -83,3 +85,21 @@ config :logger, :error_log,
     extra_fields: "go here"
   ]
 ```
+
+or
+
+
+```elixir
+config :logger,
+  backends: [{LoggerLogstashBackend, :error_log}, :console]
+
+config :logger, :error_log,
+  host: {:system, "LOGSTASH_BACKEND_HOST"},
+  port: {:system, "LOGSTASH_BACKEND_PORT"},
+  level: :error,
+  type: "my_type_of_app_or_node",
+  metadata: [
+    extra_fields: "go here"
+  ]
+```
+
