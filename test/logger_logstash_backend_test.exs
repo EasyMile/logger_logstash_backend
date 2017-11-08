@@ -17,19 +17,24 @@ defmodule LoggerLogstashBackendTest do
   use ExUnit.Case, async: false
   require Logger
 
+  @env_var "42"
   @backend {LoggerLogstashBackend, :test}
   Logger.add_backend @backend
 
   setup do
+    System.put_env("TEST_ENV_VAR", @env_var)
+
     Logger.configure_backend @backend, [
       host: "127.0.0.1",
       port: 10001,
       level: :info,
       type: "some_app",
       metadata: [
-        some_metadata: "go here"
+        some_metadata: "go here",
+        env: {:system, "TEST_ENV_VAR"},
       ]
     ]
+
     {:ok, socket} = :gen_udp.open 10001, [:binary, {:active, true}]
     on_exit fn ->
       :ok = :gen_udp.close socket
@@ -49,7 +54,8 @@ defmodule LoggerLogstashBackendTest do
       "module" => "LoggerLogstashBackendTest",
       "pid" => (inspect self()),
       "some_metadata" => "go here",
-      "line" => 41,
+      "env" => @env_var,
+      "line" => 46,
       "key1" => "field1",
     }
 
@@ -73,7 +79,8 @@ defmodule LoggerLogstashBackendTest do
       "pid" => inspect(self()),
       "pid_key" => inspect(self()),
       "some_metadata" => "go here",
-      "line" => 64,
+      "env" => @env_var,
+      "line" => 70,
     }
 
     assert contains?(data["fields"], expected)

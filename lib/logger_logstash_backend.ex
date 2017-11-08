@@ -87,7 +87,7 @@ defmodule LoggerLogstashBackend do
     opts = Keyword.merge(env, opts)
 
     level    = Keyword.get(opts, :level, :debug)
-    metadata = Keyword.get(opts, :metadata, [])
+    metadata = Enum.map(Keyword.get(opts, :metadata, []), fn {k, v} -> {k, get_system_value(v)} end)
     type     = Keyword.get(opts, :type, "elixir")
     host     = Keyword.get(opts, :host) |> get_system_value |> get_host
     port     = Keyword.get(opts, :port) |> get_system_value |> get_port
@@ -122,8 +122,7 @@ defmodule LoggerLogstashBackend do
   end
 
   defp get_system_value({:system, env_var_name}) do
-    value = System.get_env(env_var_name)
-    unless value do
+    unless value = System.get_env(env_var_name) do
       IO.warn("Logstash backend environment variable not defined: #{inspect env_var_name}")
     end
     value
