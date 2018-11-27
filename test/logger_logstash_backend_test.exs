@@ -29,6 +29,7 @@ defmodule LoggerLogstashBackendTest do
       port: 10001,
       level: :info,
       type: "some_app",
+      version: "some_version",
       metadata: [
         some_metadata: "go here",
         env: {:system, "TEST_ENV_VAR"},
@@ -47,6 +48,7 @@ defmodule LoggerLogstashBackendTest do
     json = get_log()
     {:ok, data} = Poison.decode json
     assert data["type"] === "some_app"
+    assert data["version"] === "some_version"
     assert data["message"] === "hello world"
     expected = %{
       "function" => "test can log/1",
@@ -55,7 +57,7 @@ defmodule LoggerLogstashBackendTest do
       "pid" => (inspect self()),
       "some_metadata" => "go here",
       "env" => @env_var,
-      "line" => 46,
+      "line" => 47,
       "key1" => "field1",
     }
 
@@ -71,6 +73,7 @@ defmodule LoggerLogstashBackendTest do
     json = get_log()
     {:ok, data} = Poison.decode json
     assert data["type"] === "some_app"
+    assert data["version"] === "some_version"
     assert data["message"] === "pid"
     expected = %{
       "function" => "test can log pids/1",
@@ -80,7 +83,7 @@ defmodule LoggerLogstashBackendTest do
       "pid_key" => inspect(self()),
       "some_metadata" => "go here",
       "env" => @env_var,
-      "line" => 70,
+      "line" => 72,
     }
 
     assert contains?(data["fields"], expected)

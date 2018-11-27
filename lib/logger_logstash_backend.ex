@@ -54,6 +54,7 @@ defmodule LoggerLogstashBackend do
       host: host,
       port: port,
       type: type,
+      version: version,
       metadata: metadata,
       socket: socket
     }
@@ -71,6 +72,7 @@ defmodule LoggerLogstashBackend do
 
     {:ok, json} = Poison.encode %{
       type: type,
+      version: version,
       "@timestamp": NaiveDateTime.to_iso8601(ts, :extended),
       message: to_string(msg),
       fields: Map.new(fields, fn {k, v} -> {k, pretty_inspect(v)} end),
@@ -89,6 +91,7 @@ defmodule LoggerLogstashBackend do
     level    = Keyword.get(opts, :level, :debug)
     metadata = Enum.map(Keyword.get(opts, :metadata, []), fn {k, v} -> {k, get_system_value(v)} end)
     type     = Keyword.get(opts, :type, "elixir")
+    version  = Keyword.get(opts, :version, "elixir")
     host     = Keyword.get(opts, :host) |> get_system_value |> get_host
     port     = Keyword.get(opts, :port) |> get_system_value |> get_port
 
@@ -103,6 +106,7 @@ defmodule LoggerLogstashBackend do
       level: level,
       socket: socket,
       type: type,
+      version: version,
       metadata: metadata
     }
   end

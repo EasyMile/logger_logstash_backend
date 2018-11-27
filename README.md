@@ -16,6 +16,7 @@ that will send logs to the [Logstash UDP input](https://www.elastic.co/guide/en/
  be merged with the metadata sent in every log message.
  * **level**: Atom. Minimum level for this backend.
  * **type**: String.t. Type of logs. Useful to filter in logstash.
+ * **version**: String.t. Version of logs. Useful to filter in logstash.
 
 The host and port can be defined as environment variables as well using the ```{:system, "ENV_VAR_NAME"}``` convention
 
@@ -81,6 +82,7 @@ config :logger, :error_log,
   port: 10001,
   level: :error,
   type: "my_type_of_app_or_node",
+  version: "my_version_of_app_or_node",
   metadata: [
     extra_fields: "go here"
   ]
@@ -98,6 +100,7 @@ config :logger, :error_log,
   port: {:system, "LOGSTASH_BACKEND_PORT"},
   level: :error,
   type: "my_type_of_app_or_node",
+  version: "my_version_of_app_or_node",
   metadata: [
     extra_fields: "go here"
   ]
