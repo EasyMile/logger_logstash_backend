@@ -90,10 +90,10 @@ defmodule LoggerLogstashBackend do
 
     level    = Keyword.get(opts, :level, :debug)
     metadata = Enum.map(Keyword.get(opts, :metadata, []), fn {k, v} -> {k, get_system_value(v)} end)
-    type     = Keyword.get(opts, :type, "elixir")
-    version  = Keyword.get(opts, :version, "elixir")
-    host     = Keyword.get(opts, :host) |> get_system_value |> get_host
-    port     = Keyword.get(opts, :port) |> get_system_value |> get_port
+    type     = Keyword.get(opts, :type)
+    version  = opts |> Keyword.get(:version) |> get_system_value
+    host     = opts |> Keyword.get(:host) |> get_system_value |> get_host
+    port     = opts |> Keyword.get(:port) |> get_system_value |> get_port
 
     Application.put_env(:logger, name, opts)
 
