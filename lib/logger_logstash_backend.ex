@@ -91,7 +91,7 @@ defmodule LoggerLogstashBackend do
     level    = Keyword.get(opts, :level, :debug)
     metadata = Enum.map(Keyword.get(opts, :metadata, []), fn {k, v} -> {k, get_system_value(v)} end)
     type     = Keyword.get(opts, :type)
-    version  = opts |> Keyword.get(:version) |> get_system_value
+    version  = opts |> Keyword.get(:version) |> get_system_value |> get_version
     host     = opts |> Keyword.get(:host) |> get_system_value |> get_host
     port     = opts |> Keyword.get(:port) |> get_system_value |> get_port
 
@@ -110,6 +110,9 @@ defmodule LoggerLogstashBackend do
       metadata: metadata
     }
   end
+
+  defp get_version(version) when is_binary(version), do: version
+  defp get_version(_), do: ""
 
   defp get_host(nil), do: to_charlist("localhost")
   defp get_host(host), do: to_charlist(host)
